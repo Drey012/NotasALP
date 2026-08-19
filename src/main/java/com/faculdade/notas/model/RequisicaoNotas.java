@@ -1,4 +1,4 @@
-package com.faculdade.notas.strategy;
+package com.faculdade.notas.model;
 
 public class RequisicaoNotas {
 }

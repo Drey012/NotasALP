@@ -5,8 +5,10 @@ import java.util.List;
 
 public class StrategyFactory {
     private static final List<EstrategiaAvaliacao> ESTRATEGIAS = List.of(
+            //Adicionar matérias
             new AvaliacaoALP(),
-            new AvaliacaoOS()
+            new AvaliacaoOS(),
+            new AvaliacaoDD()
     );
 
     public static List<EstrategiaAvaliacao> getEstrategiasDisponiveis() {
