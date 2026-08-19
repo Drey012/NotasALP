@@ -17,12 +17,12 @@ public class principal {
 
         double p2 = notas.nextDouble();
 
-        double media1 = aritmetica.calcularMedia1(p1, list, p2);
+        double media1 = aritmetica.calcularMedia1ALP(p1, list, p2);
 
         if (media1 < 6){
             System.out.println("Nota insuficiente (" + media1 +"), qual a nota da p3?");
             double p3 = notas.nextDouble();
-            double media2 = aritmetica.calcularMedia2(p1, list, p2, p3);
+            double media2 = aritmetica.calcularMedia2ALP(p1, list, p2, p3);
             System.out.println("A média com a p3 foi: " + media2);
 
             if (media2 < 6 && media2 >= 4){
