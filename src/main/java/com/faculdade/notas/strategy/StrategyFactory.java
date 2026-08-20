@@ -9,7 +9,8 @@ public class StrategyFactory {
             new AvaliacaoALP(),
             new AvaliacaoOS(),
             new AvaliacaoDD(),
-            new AvaliacaoMBD()
+            new AvaliacaoMBD(),
+            new AvaliacaoES()
     );
 
     public static List<EstrategiaAvaliacao> getEstrategiasDisponiveis() {
