@@ -8,7 +8,8 @@ public class StrategyFactory {
             //Adicionar matérias
             new AvaliacaoALP(),
             new AvaliacaoOS(),
-            new AvaliacaoDD()
+            new AvaliacaoDD(),
+            new AvaliacaoMBD()
     );
 
     public static List<EstrategiaAvaliacao> getEstrategiasDisponiveis() {
