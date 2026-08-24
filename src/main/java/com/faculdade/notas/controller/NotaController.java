@@ -24,7 +24,7 @@ public class NotaController {
 
     @GetMapping("/professores")
     public ResponseEntity<List<ProfessorDTO>> listarProfessores() {
-        return ResponseEntity.ok(notaService.listarProfessores());
+        return ResponseEntity.ok(notaService.   listarProfessores());
     }
 
     @PostMapping("/avaliar")

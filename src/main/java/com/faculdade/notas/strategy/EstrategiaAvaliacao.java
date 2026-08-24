@@ -8,3 +8,5 @@ public interface EstrategiaAvaliacao {
     double calcularMedia1(double[] notas);
     double calcularMedia2(double[] notas, double p3);
 }
+
+

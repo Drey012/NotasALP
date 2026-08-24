@@ -1,6 +1,8 @@
 //Centraliza a busca do professor para evitar usar switch/case diretamente na interface do usuário.
 package com.faculdade.notas.strategy;
 
+import com.faculdade.notas.exception.RecursoNaoEncontradoException;
+
 import java.util.List;
 
 public class StrategyFactory {
@@ -18,9 +20,9 @@ public class StrategyFactory {
     }
 
     public static EstrategiaAvaliacao obterPorIndice(int indice) {
-        if (indice >= 0 && indice < ESTRATEGIAS.size()) {
-            return ESTRATEGIAS.get(indice);
+        if (indice < 0 || indice >= ESTRATEGIAS.size()) {
+            throw new RecursoNaoEncontradoException("Professor/Matéria com o índice " + indice + " não foi encontrado.");
         }
-        return null;
+        return ESTRATEGIAS.get(indice);
     }
 }
