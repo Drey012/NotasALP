@@ -59,7 +59,8 @@ public class NotaService {
                 notaArredondada,
                 resultado.getStatus(),
                 resultado.isPrecisaP3(),
-                resultado.isPrecisaExame()
+                resultado.isPrecisaExame(),
+                resultado.getNotaNecessariaProximaProva()
         );
     }
 

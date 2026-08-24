@@ -1,4 +1,5 @@
 package com.faculdade.notas.strategy;
+import com.faculdade.notas.util.CalculoUtils;
 
 public class AvaliacaoDD implements EstrategiaAvaliacao{
     @Override
@@ -31,5 +32,19 @@ public class AvaliacaoDD implements EstrategiaAvaliacao{
         } else {
             return (p1 + p3)/2;
         }
+    }
+
+    @Override
+    public double calcularNotaNecessaria(double[] notasAtuais) {
+        // Se o aluno informou apenas a P1 (1 nota), calculamos a P2
+        if (notasAtuais.length == 1) {
+            double p1 = notasAtuais[0];
+
+            // P2 = 12.0 - P1
+            double p2Necessaria = 12.0 - p1;
+
+            return Math.max(0.0, CalculoUtils.arredondar(p2Necessaria));
+        }
+        return 0.0;
     }
 }

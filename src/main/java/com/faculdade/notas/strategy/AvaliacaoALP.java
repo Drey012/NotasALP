@@ -1,4 +1,5 @@
 package com.faculdade.notas.strategy;
+import com.faculdade.notas.util.CalculoUtils;
 
 public class AvaliacaoALP implements EstrategiaAvaliacao {
     @Override
@@ -32,5 +33,20 @@ public class AvaliacaoALP implements EstrategiaAvaliacao {
         } else {
             return (0.35 * p1) + (0.15 * list) + (0.50 * p3);
         }
+    }
+
+    @Override
+    public double calcularNotaNecessaria(double[] notasAtuais) {
+        // Se o aluno já informou P1 e Listas (2 notas), calculamos quanto falta na P2
+        if (notasAtuais.length == 2) {
+            double p1 = notasAtuais[0];
+            double list = notasAtuais[1];
+
+            // P2 = (6.0 - 0.35*P1 - 0.15*List) / 0.50
+            double p2Necessaria = (6.0 - (0.35 * p1) - (0.15 * list)) / 0.50;
+
+            return Math.max(0.0, CalculoUtils.arredondar(p2Necessaria));
+        }
+        return 0.0;
     }
 }
