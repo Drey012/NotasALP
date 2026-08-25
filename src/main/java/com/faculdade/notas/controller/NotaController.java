@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/notas")
+@RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class NotaController {
 
@@ -24,18 +24,12 @@ public class NotaController {
 
     @GetMapping("/professores")
     public ResponseEntity<List<ProfessorDTO>> listarProfessores() {
-        return ResponseEntity.ok(notaService.   listarProfessores());
+        return ResponseEntity.ok(notaService.listarProfessores());
     }
 
     @PostMapping("/avaliar")
-    public ResponseEntity<?> avaliar(@RequestBody RequisicaoNotaDTO requisicao) {
-        try {
-            ResultadoAvaliacao resultado = notaService.avaliar(requisicao);
-            return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao processar a avaliação: " + e.getMessage());
-        }
+    public ResponseEntity<ResultadoAvaliacao> avaliar(@RequestBody RequisicaoNotaDTO requisicao) {
+        ResultadoAvaliacao resultado = notaService.avaliar(requisicao);
+        return ResponseEntity.ok(resultado);
     }
 }
