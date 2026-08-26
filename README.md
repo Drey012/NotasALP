@@ -1,4 +1,3 @@
-```markdown
 # NotasALP - Avaliador Acadêmico (Spring Boot REST API)
 
 Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos, aplicando o padrão de projeto **Strategy** para suportar dinamicamente as diferentes metodologias de avaliação dos professores.
@@ -25,10 +24,18 @@ Com o Maven configurado, execute o comando na raiz do projeto:
 
 ```bash
 mvn spring-boot:run
-
 ```
 
 A aplicação estará acessível em: `http://localhost:8080`.
+
+---
+
+## 📋 Regras de Negócio Implementadas
+
+1. **Cálculo com Notas Parciais**: Se forem informadas apenas algumas das notas (ex: apenas P1 em matérias com P1 e P2, ou P1 + Listas em ALP), a API calcula a nota mínima necessária na próxima prova para que o aluno atinja média $\ge 6.0$.
+2. **Dependência Composta em ALP**: Para Algoritmo e Lógica de Programação, o cálculo da nota mínima de P2 só é realizado quando ambas P1 e Listas são informadas (50% do semestre).
+3. **Regra de Substituição da P3**: Se a nota obtida na P3 for menor que ambas P1 e P2, nenhuma prova é substituída e a média M1 é mantida.
+4. **Cálculo da P3 com M1 < 6.0**: Caso a média M1 seja inferior a 6.0, o sistema retém a maior nota entre P1 e P2 para calcular a nota mínima necessária na P3.
 
 ---
 
@@ -38,7 +45,7 @@ A aplicação estará acessível em: `http://localhost:8080`.
 
 Retorna a lista de professores e matérias cadastradas, juntamente com os rótulos das notas esperadas para preenchimento no frontend.
 
-* **URL:** `/api/notas/professores`
+* **URL:** `/api/professores`
 * **Método:** `GET`
 * **Resposta Sucesso (HTTP 200 OK):**
 
@@ -48,30 +55,29 @@ Retorna a lista de professores e matérias cadastradas, juntamente com os rótul
     "indice": 0,
     "nomeProfessor": "Sirley",
     "nomeMateria": "Algoritmo e Lógica de Programação",
-    "rotulosNotasIniciais": ["P1", "Listas"]
+    "rotulosNotasIniciais": ["P1", "Listas", "P2"]
   },
   {
-    "indice": 2,
+    "indice": 4,
     "nomeProfessor": "Danilo",
     "nomeMateria": "Engenharia de Software",
     "rotulosNotasIniciais": ["P1", "P2", "Projeto", "PI"]
   }
 ]
-
 ```
 
 ---
 
 ### 2. Avaliar e Calcular Notas
 
-Calcula a média parcial ou final do aluno, informando o status acadêmico e a nota necessária na próxima avaliação para atingir a média de aprovação ($\ge 6.0$).
+Calcula a média parcial ou final do aluno, informando o status acadêmico, a nota necessária na próxima avaliação para atingir a média de aprovação ($\ge 6.0$) e a identificação da prova necessária (`proximaProvaLabel`).
 
-* **URL:** `/api/notas/avaliar`
+* **URL:** `/api/avaliar`
 * **Método:** `POST`
 
-#### Cenário A: Notas Parciais (Cálculo de "Quanto Preciso Tirar?")
+#### Cenário A: Notas Parciais (Cálculo de "Quanto Preciso Tirar na P2?")
 
-Envia as notas parciais para calcular a média e descobrir quanto falta para fechar a matéria com média 6.0.
+Envia as notas parciais (ex: P1=5.0 e Listas=7.5 em ALP) para descobrir quanto falta na P2.
 
 **Corpo da Requisição (JSON):**
 
@@ -80,32 +86,56 @@ Envia as notas parciais para calcular a média e descobrir quanto falta para fec
   "indiceProfessor": 0,
   "notasIniciais": [5.0, 7.5]
 }
-
 ```
 
 **Resposta Sucesso (HTTP 200 OK):**
 
 ```json
 {
-  "notaAtual": 4.88,
-  "status": "NECESSÁRIO P3",
-  "precisaP3": true,
+  "notaAtual": 0.0,
+  "status": "NECESSÁRIO P2",
+  "precisaP3": false,
   "precisaExame": false,
-  "notaNecessariaProximaProva": 7.15
+  "notaNecessariaProximaProva": 6.25,
+  "proximaProvaLabel": "P2"
 }
-
 ```
 
-#### Cenário B: Aluno Aprovado Direto
+#### Cenário B: Cálculo de P3 Necessária (M1 < 6.0)
+
+Quando o aluno realizou todas as provas iniciais mas a média deu menor que 6.0.
 
 **Corpo da Requisição (JSON):**
 
 ```json
 {
-  "indiceProfessor": 2,
+  "indiceProfessor": 1,
+  "notasIniciais": [9.0, 2.0]
+}
+```
+
+**Resposta Sucesso (HTTP 200 OK):**
+
+```json
+{
+  "notaAtual": 5.5,
+  "status": "NECESSÁRIO P3",
+  "precisaP3": true,
+  "precisaExame": false,
+  "notaNecessariaProximaProva": 3.0,
+  "proximaProvaLabel": "P3"
+}
+```
+
+#### Cenário C: Aluno Aprovado Direto
+
+**Corpo da Requisição (JSON):**
+
+```json
+{
+  "indiceProfessor": 4,
   "notasIniciais": [8.0, 7.5, 9.0, 8.5]
 }
-
 ```
 
 **Resposta Sucesso (HTTP 200 OK):**
@@ -116,9 +146,9 @@ Envia as notas parciais para calcular a média e descobrir quanto falta para fec
   "status": "APROVADO",
   "precisaP3": false,
   "precisaExame": false,
-  "notaNecessariaProximaProva": null
+  "notaNecessariaProximaProva": null,
+  "proximaProvaLabel": null
 }
-
 ```
 
 ---
@@ -133,9 +163,8 @@ Caso os dados de entrada sejam inválidos, a API retorna respostas padronizadas 
 {
   "mensagem": "A Nota deve estar entre 0.0 e 10.0.",
   "status": 400,
-  "timestamp": "2026-08-24T13:00:00"
+  "timestamp": "2026-08-26T13:00:00"
 }
-
 ```
 
 * **Exemplo de Recurso Não Encontrado (HTTP 404 Not Found):**
@@ -144,9 +173,8 @@ Caso os dados de entrada sejam inválidos, a API retorna respostas padronizadas 
 {
   "mensagem": "Professor/Matéria com o índice 99 não foi encontrado.",
   "status": 404,
-  "timestamp": "2026-08-24T13:00:00"
+  "timestamp": "2026-08-26T13:00:00"
 }
-
 ```
 
 ---
@@ -155,31 +183,26 @@ Caso os dados de entrada sejam inválidos, a API retorna respostas padronizadas 
 
 ### 1. Chamada para Listar Professores no Formulário
 
-No Next.js, utilize o endpoint `GET` para renderizar o menu de seleção e os inputs dinâmicos das notas de acordo com a matéria escolhida:
-
 ```typescript
-// services/api.ts
+// lib/api.ts
 export async function obterProfessores() {
-  const res = await fetch('http://localhost:8080/api/notas/professores');
+  const res = await fetch('http://localhost:8080/api/professores');
   if (!res.ok) throw new Error('Falha ao carregar lista de professores');
   return res.json();
 }
-
 ```
 
 ### 2. Chamada para Calcular Nota
 
-Envie a requisição do formulário e exiba a `notaNecessariaProximaProva` quando ela for retornada:
-
 ```typescript
-// services/api.ts
+// lib/api.ts
 export async function avaliarNotas(dados: {
   indiceProfessor: number;
   notasIniciais: number[];
   p3?: number | null;
   exame?: number | null;
 }) {
-  const res = await fetch('http://localhost:8080/api/notas/avaliar', {
+  const res = await fetch('http://localhost:8080/api/avaliar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dados),
@@ -188,16 +211,9 @@ export async function avaliarNotas(dados: {
   const body = await res.json();
 
   if (!res.ok) {
-    // Trata mensagens de erro da API (HTTP 400 / 404)
     throw new Error(body.mensagem || 'Erro ao realizar avaliação');
   }
 
   return body;
 }
-
-```
-
-### 3. Sugestão de UI/UX no Next.js
-
-* **Se `notaNecessariaProximaProva` for maior que `0.0` e menor/igual a `10.0**`: Exibir um destaque informativo (ex: card amarelo) com a mensagem: *"Você precisa tirar no mínimo **X.XX** na próxima prova para ser aprovado sem exame."*
-* **Se `notaNecessariaProximaProva` for maior que `10.0**`: Exibir um alerta vermelho informando que mesmo com a nota máxima na prova regular, o aluno precisará recorrer à P3 ou Exame Final.
+```

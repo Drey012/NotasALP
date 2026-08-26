@@ -29,6 +29,11 @@ public class AvaliacaoES implements EstrategiaAvaliacao{
         double projeto = notas[2];
         double PI = notas[3];
 
+        // Regra 3: Em caso de ter uma nota menor na P3 do que em ambas, P1 e P2, nenhuma delas deve ser substituída
+        if (p3 <= p1 && p3 <= p2) {
+            return calcularMedia1(notas);
+        }
+
         if (p1 < p2){
             return ((p3+p2)/2)*0.5+projeto*0.2+PI*0.3;
         } else {
@@ -65,3 +70,4 @@ public class AvaliacaoES implements EstrategiaAvaliacao{
         return 0.0;
     }
 }
+

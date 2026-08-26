@@ -40,7 +40,7 @@ public class NotaService {
         // Busca a estratégia (se o índice for inválido, o StrategyFactory lança RecursoNaoEncontradoException)
         EstrategiaAvaliacao estrategia = StrategyFactory.obterPorIndice(requisicao.getIndiceProfessor());
 
-        // Validações de limites e quantidade de notas
+        // Validações de limites e quantidade de notas (permite envio de notas parciais entre 1 e N)
         validarNotas(requisicao.getNotasIniciais(), estrategia.getRotulosNotasIniciais().length);
         if (requisicao.getP3() != null) validarNota("P3", requisicao.getP3());
         if (requisicao.getExame() != null) validarNota("Exame Final", requisicao.getExame());
@@ -60,13 +60,14 @@ public class NotaService {
                 resultado.getStatus(),
                 resultado.isPrecisaP3(),
                 resultado.isPrecisaExame(),
-                resultado.getNotaNecessariaProximaProva()
+                resultado.getNotaNecessariaProximaProva(),
+                resultado.getProximaProvaLabel()
         );
     }
 
-    private void validarNotas(double[] notas, int quantidadeEsperada) {
-        if (notas == null || notas.length != quantidadeEsperada) {
-            throw new RegraNegocioException("Quantidade de notas enviadas é inválida. Esperado: " + quantidadeEsperada);
+    private void validarNotas(double[] notas, int quantidadeMax) {
+        if (notas == null || notas.length == 0 || notas.length > quantidadeMax) {
+            throw new RegraNegocioException("Quantidade de notas enviadas é inválida. Informe entre 1 e " + quantidadeMax + " notas.");
         }
         for (double nota : notas) {
             validarNota("Nota", nota);
@@ -78,4 +79,4 @@ public class NotaService {
             throw new RegraNegocioException("A " + nomeNota + " deve estar entre 0.0 e 10.0.");
         }
     }
-}
+}

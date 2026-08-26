@@ -10,6 +10,19 @@ public interface EstrategiaAvaliacao {
     double calcularMedia2(double[] notas, double p3);
 
     double calcularNotaNecessaria(double[] notasAtuais);
+    
+    default int getQuantidadeNotasParaM1() {
+        return getRotulosNotasIniciais().length;
+    }
+
+    default String getProximaProvaLabel(double[] notasAtuais) {
+        int total = getRotulosNotasIniciais().length;
+        if (notasAtuais.length < total) {
+            return getRotulosNotasIniciais()[notasAtuais.length];
+        }
+        return "P3";
+    }
 }
+
 
 
