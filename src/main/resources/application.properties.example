@@ -1,0 +1,8 @@
+# Exemplo de configuração - application.properties.example
+spring.datasource.url=jdbc:postgresql://localhost:5432/notasalp
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
