@@ -12,7 +12,7 @@ public class Semestre {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "CURSO_CUR_INT_ID", nullable = false)
+    @JoinColumn(name = "CUR_INT_ID", nullable = false)
     private Curso curso;
 
     @Column(name = "SEM_INT_ORDEM", nullable = false)

@@ -12,11 +12,11 @@ public class ProfessorMateria {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "PROFESSOR_PRO_INT_ID", nullable = false)
+    @JoinColumn(name = "PRO_INT_ID", nullable = false)
     private Professor professor;
 
     @ManyToOne
-    @JoinColumn(name = "MATERIA_MAT_INT_ID", nullable = false)
+    @JoinColumn(name = "MAT_INT_ID", nullable = false)
     private Materia materia;
 
     @Column(name = "PMA_STR_TURNO", length = 10)

@@ -12,7 +12,7 @@ public class Materia {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "SEMESTRE_SEM_INT_ID", nullable = false)
+    @JoinColumn(name = "SEM_INT_ID", nullable = false)
     private Semestre semestre;
 
     @Column(name = "MAT_STR_NOME", length = 100, nullable = false)
