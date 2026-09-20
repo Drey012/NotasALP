@@ -1,82 +1,77 @@
 package com.faculdade.notas.service;
 
-import com.faculdade.notas.exception.RegraNegocioException;
+import com.faculdade.notas.model.ProfessorMateria;
 import com.faculdade.notas.model.ResultadoAvaliacao;
 import com.faculdade.notas.model.dto.ProfessorDTO;
 import com.faculdade.notas.model.dto.RequisicaoNotaDTO;
-import com.faculdade.notas.strategy.EstrategiaAvaliacao;
-import com.faculdade.notas.strategy.StrategyFactory;
-import com.faculdade.notas.util.CalculoUtils;
+import com.faculdade.notas.repository.ProfessorMateriaRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class NotaService {
 
+    private final ProfessorMateriaRepository repository;
+    private final AvaliadorAcademico avaliador;
+    private final ObjectMapper objectMapper;
+
+    public NotaService(ProfessorMateriaRepository repository, AvaliadorAcademico avaliador, ObjectMapper objectMapper) {
+        this.repository = repository;
+        this.avaliador = avaliador;
+        this.objectMapper = objectMapper;
+    }
+
     public List<ProfessorDTO> listarProfessores() {
-        List<EstrategiaAvaliacao> estrategias = StrategyFactory.getEstrategiasDisponiveis();
-        List<ProfessorDTO> professores = new ArrayList<>();
+        List<ProfessorMateria> vinculacoes = repository.findAll();
 
-        for (int i = 0; i < estrategias.size(); i++) {
-            EstrategiaAvaliacao estrategia = estrategias.get(i);
-            professores.add(new ProfessorDTO(
-                    i,
-                    estrategia.getNomeProfessor(),
-                    estrategia.getNomeMateria(),
-                    estrategia.getRotulosNotasIniciais()
-            ));
-        }
+        return vinculacoes.stream().map(pm -> {
+            try {
+                JsonNode formulaNode = objectMapper.readTree(pm.getJsonFormula());
+                JsonNode rotulosNode = formulaNode.get("rotulos");
 
-        return professores;
+                String[] rotulos = new String[rotulosNode.size()];
+                for (int i = 0; i < rotulosNode.size(); i++) {
+                    rotulos[i] = rotulosNode.get(i).asText();
+                }
+
+                return new ProfessorDTO(
+                        pm.getId().intValue(),
+                        pm.getProfessor().getNome(),
+                        pm.getMateria().getNome(),
+                        rotulos
+                );
+            } catch (Exception e) {
+                throw new RuntimeException("Erro ao processar fórmula JSON para o ID: " + pm.getId(), e);
+            }
+        }).collect(Collectors.toList());
     }
 
     public ResultadoAvaliacao avaliar(RequisicaoNotaDTO requisicao) {
-        if (requisicao.getIndiceProfessor() == null) {
-            throw new RegraNegocioException("O índice do professor é obrigatório.");
-        }
+        ProfessorMateria pm = repository.findById(requisicao.getIndiceProfessor().longValue())
+                .orElseThrow(() -> new IllegalArgumentException("Vínculo não encontrado."));
 
-        // Busca a estratégia (se o índice for inválido, o StrategyFactory lança RecursoNaoEncontradoException)
-        EstrategiaAvaliacao estrategia = StrategyFactory.obterPorIndice(requisicao.getIndiceProfessor());
+        try {
+            JsonNode formulaNode = objectMapper.readTree(pm.getJsonFormula());
 
-        // Validações de limites e quantidade de notas (permite envio de notas parciais entre 1 e N)
-        validarNotas(requisicao.getNotasIniciais(), estrategia.getRotulosNotasIniciais().length);
-        if (requisicao.getP3() != null) validarNota("P3", requisicao.getP3());
-        if (requisicao.getExame() != null) validarNota("Exame Final", requisicao.getExame());
+            // Lógica de compatibilidade: se o banco ainda não tiver a chave "formula", usa a do SIGA
+            String formula = formulaNode.has("formula")
+                    ? formulaNode.get("formula").asText()
+                    : "MAX(MAX(P1+P2, P1+P3), P2+P3)/2";
 
-        AvaliadorAcademico avaliador = new AvaliadorAcademico(estrategia);
-        ResultadoAvaliacao resultado = avaliador.avaliar(
-                requisicao.getNotasIniciais(),
-                requisicao.getP3(),
-                requisicao.getExame()
-        );
+            JsonNode rotulosNode = formulaNode.get("rotulos");
+            String[] rotulos = new String[rotulosNode.size()];
+            for (int i = 0; i < rotulosNode.size(); i++) {
+                rotulos[i] = rotulosNode.get(i).asText();
+            }
 
-        // Aplica o arredondamento de 2 casas decimais na nota retornada
-        double notaArredondada = CalculoUtils.arredondar(resultado.getNotaAtual());
-
-        return new ResultadoAvaliacao(
-                notaArredondada,
-                resultado.getStatus(),
-                resultado.isPrecisaP3(),
-                resultado.isPrecisaExame(),
-                resultado.getNotaNecessariaProximaProva(),
-                resultado.getProximaProvaLabel()
-        );
-    }
-
-    private void validarNotas(double[] notas, int quantidadeMax) {
-        if (notas == null || notas.length == 0 || notas.length > quantidadeMax) {
-            throw new RegraNegocioException("Quantidade de notas enviadas é inválida. Informe entre 1 e " + quantidadeMax + " notas.");
-        }
-        for (double nota : notas) {
-            validarNota("Nota", nota);
+            // Envia os dados diretamente para o motor dinâmico
+            return avaliador.avaliar(formula, rotulos, requisicao);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao processar a avaliação", e);
         }
     }
-
-    private void validarNota(String nomeNota, double valor) {
-        if (valor < 0.0 || valor > 10.0) {
-            throw new RegraNegocioException("A " + nomeNota + " deve estar entre 0.0 e 10.0.");
-        }
-    }
-}
+}
