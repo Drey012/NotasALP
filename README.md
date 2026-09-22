@@ -1,6 +1,6 @@
 # NotasALP - Avaliador Acadêmico (Spring Boot REST API)
 
-Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução sem a necessidade de hardcoding.
+Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução, além de suportar o cadastro dinâmico de toda a estrutura acadêmica via painel administrativo.
 
 ---
 
@@ -22,7 +22,7 @@ Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para 
 2. Crie um banco de dados vazio chamado `notasalp`.
 3. Renomeie o arquivo `src/main/resources/application.properties.example` para `application.properties` e preencha sua senha do banco.
 
-> **Migração de Dados (Casa ↔ Faculdade):**
+> **Migração de Dados:**
 > - **Para Exportar:** No pgAdmin, clique com o botão direito no banco > *Backup...* > Format: *Plain* > Defina o nome (ex: `backup.sql`).
 > - **Para Importar:** Crie o banco `notasalp` vazio, abra a *Query Tool*, carregue o arquivo `backup.sql` e execute (F5).
 
@@ -38,57 +38,79 @@ A aplicação estará acessível em: `http://localhost:8080`.
 
 ---
 
-## 📋 Regras de Negócio e Motor de Avaliação
+## 📋 Arquitetura de Dados e Padrão de DTOs
 
-O sistema processa dinamicamente as strings matemáticas armazenadas no banco de dados (ex: `MAX(MAX(P1+P2, P1+P3), P2+P3)/2`), aplicando as seguintes capacidades:
+Para garantir segurança e organização, a API separa rigorosamente os dados de entrada e saída:
 
-1. **Simulação de Nota Necessária**: Se forem informadas apenas algumas das notas, a API utiliza força bruta otimizada para simular cenários e descobrir a nota mínima necessária na próxima prova para que o aluno atinja a média >= 6.0.
-2. **Substituição Inteligente (Padrão SIGA)**: O uso de funções como `MAX()` permite que a regra de substituição de provas (como a P3 substituindo a menor nota entre P1 e P2) ocorra nativamente durante o cálculo matemático.
-3. **Cálculo da P3 com M1 < 6.0**: Caso a média M1 seja inferior a 6.0, o sistema retém a maior nota entre as parciais para calcular a nota mínima exigida na P3.
+- **`request` (Entrada):** Objetos de requisição (`DTO`) enviados pelo cliente nos métodos `POST`. Não contêm IDs gerados por banco.
+- **`response` (Saída):** Objetos de resposta retornados pela API após o processamento, contendo o ID gerado e metadados relacionais para consumo visual no frontend.
+- **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos ou isolados destinados ao gerenciamento e cadastro da estrutura acadêmica.
 
 ---
 
 ## 📌 Endpoints da API
 
-### 1. Listar Professores e Matérias
+### A. Rotas Administrativas (Cadastro Dinâmico)
 
-Retorna a lista de professores e matérias cadastradas diretamente do PostgreSQL, juntamente com os rótulos das notas esperadas para renderização dinâmica no frontend.
+*Ordem recomendada de cadastro para respeitar as chaves estrangeiras: Cursos ➔ Professores ➔ Semestres ➔ Matérias ➔ Atribuições.*
 
-- **URL:** `/api/professores`
-- **Método:** `GET`
-- **Resposta Sucesso (HTTP 200 OK):**
+#### 1. Cadastrar Curso
+
+- **URL:** `/api/admin/cursos`
+- **Método:** `POST`
+- **Corpo (JSON):** `{"nome": "Desenvolvimento de Software Multiplataforma", "sigla": "DSM"}`
+
+#### 2. Cadastrar Professor
+
+- **URL:** `/api/admin/professores`
+- **Método:** `POST`
+- **Corpo (JSON):** `{"nome": "Profº Exemplo", "email": "exemplo@cps.sp.gov.br"}`
+
+#### 3. Cadastrar Semestre
+
+- **URL:** `/api/admin/semestres`
+- **Método:** `POST`
+- **Corpo (JSON):** `{"ordem": 1, "cursoId": 1}`
+
+#### 4. Cadastrar Matéria
+
+- **URL:** `/api/admin/materias`
+- **Método:** `POST`
+- **Corpo (JSON):** `{"nome": "Algoritmo e Lógica de Programação", "sigla": "ALP", "semestreId": 1}`
+
+#### 5. Cadastrar Atribuição (Vínculo de Turma/Fórmula)
+
+- **URL:** `/api/admin/atribuicoes`
+- **Método:** `POST`
+- **Corpo (JSON):**
 
 ```json
-[
-  {
-    "indice": 1,
-    "nomeProfessor": "Sirley",
-    "nomeMateria": "Algoritmo e Lógica de Programação",
-    "rotulosNotasIniciais": ["P1", "Listas", "P2"]
-  },
-  {
-    "indice": 5,
-    "nomeProfessor": "Danilo",
-    "nomeMateria": "Engenharia de Software I",
-    "rotulosNotasIniciais": ["P1", "P2", "Projeto", "PI"]
-  }
-]
+{
+  "professorId": 1,
+  "materiaId": 1,
+  "turno": "MANHA",
+  "jsonFormula": "{\"formula\": \"MAX(MAX(P1+P2, P1+P3), P2+P3)/2\", \"rotulos\": [\"P1\", \"P2\"]}"
+}
 ```
 
 ---
 
-### 2. Avaliar e Calcular Notas
+### B. Rotas Públicas / Consulta
 
-Calcula a média parcial ou final do aluno, informando o status acadêmico, a nota necessária na próxima avaliação para atingir a média de aprovação (>= 6.0) e a identificação da prova necessária (`proximaProvaLabel`).
+#### 1. Listar Professores/Atribuições
+
+Retorna a lista de atribuições cadastradas para renderização do formulário de notas no frontend.
+
+- **URL:** `/api/professores`
+- **Método:** `GET`
+
+#### 2. Avaliar e Calcular Notas
+
+Calcula a média parcial ou final com base no motor de regras dinâmico (`exp4j`).
 
 - **URL:** `/api/avaliar`
 - **Método:** `POST`
-
-#### Cenário A: Notas Parciais (Cálculo de Necessidade)
-
-Envia as notas parciais para descobrir quanto falta na próxima avaliação.
-
-**Corpo da Requisição (JSON):**
+- **Corpo (JSON):**
 
 ```json
 {
@@ -97,7 +119,7 @@ Envia as notas parciais para descobrir quanto falta na próxima avaliação.
 }
 ```
 
-**Resposta Sucesso (HTTP 200 OK):**
+- **Resposta de Sucesso (HTTP 200 OK):**
 
 ```json
 {
@@ -112,48 +134,25 @@ Envia as notas parciais para descobrir quanto falta na próxima avaliação.
 
 ---
 
-### 3. Tratamento de Exceções e Respostas de Erro
-
-Caso os dados de entrada sejam inválidos ou o ID da relação não exista no banco, a API retorna respostas padronizadas via `@RestControllerAdvice`.
-
-- **Exemplo de Recurso Não Encontrado (HTTP 404 Not Found):**
-
-```json
-{
-  "mensagem": "Vínculo não encontrado.",
-  "status": 404,
-  "timestamp": "2026-08-26T13:00:00"
-}
-```
-
----
-
 ## 🔗 Integração com o Frontend (Next.js)
 
-As chamadas são padronizadas via JSON. O campo `indiceProfessor` no frontend agora mapeia diretamente para a Chave Primária (ID) da tabela associativa no PostgreSQL.
-
-### Chamada para Avaliar Nota
+Exemplo de chamada para o cadastro de um novo curso através do painel administrativo:
 
 ```typescript
 // lib/api.ts
-export async function avaliarNotas(dados: {
-  indiceProfessor: number;
-  notasIniciais: number[];
-  p3?: number | null;
-  exame?: number | null;
-}) {
-  const res = await fetch('http://localhost:8080/api/avaliar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dados),
-  });
+export async function cadastrarCurso(dados: { nome: string; sigla: string }) {
+    const res = await fetch('http://localhost:8080/api/admin/cursos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+    });
 
-  const body = await res.json();
+    const body = await res.json();
 
-  if (!res.ok) {
-    throw new Error(body.mensagem || 'Erro ao realizar avaliação');
-  }
+    if (!res.ok) {
+        throw new Error(body.mensagem || 'Erro ao cadastrar curso');
+    }
 
-  return body;
+    return body;
 }
 ```
