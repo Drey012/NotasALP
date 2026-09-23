@@ -1,13 +1,13 @@
 # NotasALP - Avaliador Acadêmico (Spring Boot REST API)
 
-Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução, além de suportar o cadastro dinâmico de toda a estrutura acadêmica via painel administrativo.
+Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução, além de suportar o CRUD dinâmico completo de toda a estrutura acadêmica via painel administrativo.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Java 17**
-- **Spring Boot 3 (Web, Data JPA)**
+- **Spring Boot 3 (Web, Data JPA, Validation)**
 - **PostgreSQL** (Armazenamento relacional e documentos JSON)
 - **exp4j** (Avaliador de Expressões Matemáticas)
 - **Maven**
@@ -38,60 +38,39 @@ A aplicação estará acessível em: `http://localhost:8080`.
 
 ---
 
-## 📋 Arquitetura de Dados e Padrão de DTOs
+## 📋 Arquitetura de Dados, DTOs e Validações
 
-Para garantir segurança e organização, a API separa rigorosamente os dados de entrada e saída:
+Para garantir segurança e organização, a API separa rigorosamente os dados de entrada, saída e regras de validação:
 
-- **`request` (Entrada):** Objetos de requisição (`DTO`) enviados pelo cliente nos métodos `POST`. Não contêm IDs gerados por banco.
+- **`request` (Entrada):** Objetos de requisição (`DTO`) enviados pelo cliente nos métodos `POST` e `PUT`. São validados com anotações de `jakarta.validation` (`@NotBlank`, `@NotNull`, `@Email`, `@Size`, `@Min`).
 - **`response` (Saída):** Objetos de resposta retornados pela API após o processamento, contendo o ID gerado e metadados relacionais para consumo visual no frontend.
-- **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos ou isolados destinados ao gerenciamento e cadastro da estrutura acadêmica.
+- **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos/isolados destinados ao gerenciamento e cadastro da estrutura acadêmica.
 
 ---
 
 ## 📌 Endpoints da API
 
-### A. Rotas Administrativas (Cadastro Dinâmico)
+### A. Rotas Administrativas (CRUD Dinâmico)
 
 *Ordem recomendada de cadastro para respeitar as chaves estrangeiras: Cursos ➔ Professores ➔ Semestres ➔ Matérias ➔ Atribuições.*
 
-#### 1. Cadastrar Curso
-
-- **URL:** `/api/admin/cursos`
-- **Método:** `POST`
-- **Corpo (JSON):** `{"nome": "Desenvolvimento de Software Multiplataforma", "sigla": "DSM"}`
-
-#### 2. Cadastrar Professor
-
-- **URL:** `/api/admin/professores`
-- **Método:** `POST`
-- **Corpo (JSON):** `{"nome": "Profº Exemplo", "email": "exemplo@cps.sp.gov.br"}`
-
-#### 3. Cadastrar Semestre
-
-- **URL:** `/api/admin/semestres`
-- **Método:** `POST`
-- **Corpo (JSON):** `{"ordem": 1, "cursoId": 1}`
-
-#### 4. Cadastrar Matéria
-
-- **URL:** `/api/admin/materias`
-- **Método:** `POST`
-- **Corpo (JSON):** `{"nome": "Algoritmo e Lógica de Programação", "sigla": "ALP", "semestreId": 1}`
-
-#### 5. Cadastrar Atribuição (Vínculo de Turma/Fórmula)
-
-- **URL:** `/api/admin/atribuicoes`
-- **Método:** `POST`
-- **Corpo (JSON):**
-
-```json
-{
-  "professorId": 1,
-  "materiaId": 1,
-  "turno": "MANHA",
-  "jsonFormula": "{\"formula\": \"MAX(MAX(P1+P2, P1+P3), P2+P3)/2\", \"rotulos\": [\"P1\", \"P2\"]}"
-}
-```
+| Módulo | Método | Endpoint | Descrição | Corpo / Parâmetros |
+| --- | --- | --- | --- | --- |
+| **Cursos** | `POST` | `/api/admin/cursos` | Criar novo curso | `{"nome": "DSM", "sigla": "DSM"}` |
+| | `PUT` | `/api/admin/cursos/{id}` | Atualizar curso existente | `{"nome": "Novo Nome", "sigla": "SIG"}` |
+| | `DELETE` | `/api/admin/cursos/{id}` | Excluir curso pelo ID | N/A *(Retorna 204 No Content)* |
+| **Professores** | `POST` | `/api/admin/professores` | Criar novo professor | `{"nome": "Prof", "email": "a@cps.sp.gov.br"}` |
+| | `PUT` | `/api/admin/professores/{id}` | Atualizar professor | `{"nome": "Prof X", "email": "x@cps.sp.gov.br"}` |
+| | `DELETE` | `/api/admin/professores/{id}` | Excluir professor | N/A *(Retorna 204 No Content)* |
+| **Semestres** | `POST` | `/api/admin/semestres` | Criar semestre | `{"ordem": 1, "cursoId": 1}` |
+| | `PUT` | `/api/admin/semestres/{id}` | Atualizar semestre | `{"ordem": 2, "cursoId": 1}` |
+| | `DELETE` | `/api/admin/semestres/{id}` | Excluir semestre | N/A *(Retorna 204 No Content)* |
+| **Matérias** | `POST` | `/api/admin/materias` | Criar matéria | `{"nome": "ALP", "sigla": "ALP", "semestreId": 1}` |
+| | `PUT` | `/api/admin/materias/{id}` | Atualizar matéria | `{"nome": "ALP II", "sigla": "AL2", "semestreId": 1}` |
+| | `DELETE` | `/api/admin/materias/{id}` | Excluir matéria | N/A *(Retorna 204 No Content)* |
+| **Atribuições** | `POST` | `/api/admin/atribuicoes` | Criar atribuição/fórmula | `{"professorId": 1, "materiaId": 1, "turno": "MANHA", "jsonFormula": "..."}` |
+| | `PUT` | `/api/admin/atribuicoes/{id}` | Atualizar atribuição | `{"professorId": 1, "materiaId": 1, "turno": "NOITE", "jsonFormula": "..."}` |
+| | `DELETE` | `/api/admin/atribuicoes/{id}` | Excluir atribuição | N/A *(Retorna 204 No Content)* |
 
 ---
 
@@ -99,60 +78,140 @@ Para garantir segurança e organização, a API separa rigorosamente os dados de
 
 #### 1. Listar Professores/Atribuições
 
-Retorna a lista de atribuições cadastradas para renderização do formulário de notas no frontend.
-
 - **URL:** `/api/professores`
 - **Método:** `GET`
 
 #### 2. Avaliar e Calcular Notas
 
-Calcula a média parcial ou final com base no motor de regras dinâmico (`exp4j`).
-
 - **URL:** `/api/avaliar`
 - **Método:** `POST`
-- **Corpo (JSON):**
+- **Corpo (JSON):** `{"indiceProfessor": 1, "notasIniciais": [5.0, 7.5]}`
+
+---
+
+## ⚠️ Estrutura de Tratamento de Erros (Backend)
+
+A API trata e padroniza todas as exceções via `@RestControllerAdvice` no `GlobalExceptionHandler`. Qualquer erro disparado retornará um JSON estruturado:
+
+### 1. Erro de Validação de Formato (HTTP 400 Bad Request)
+
+Ocorre quando campos marcados com `@Valid` falham na validação (ex: e-mail inválido ou campos em branco). Contém a lista de `detalhes` indicando os campos específicos:
 
 ```json
 {
-  "indiceProfessor": 1,
-  "notasIniciais": [5.0, 7.5]
+  "mensagem": "Falha na validação dos dados enviados.",
+  "status": 400,
+  "timestamp": "2026-09-23T19:30:00",
+  "detalhes": [
+    "email: O formato do e-mail é inválido.",
+    "nome: O nome do professor é obrigatório."
+  ]
 }
 ```
 
-- **Resposta de Sucesso (HTTP 200 OK):**
+### 2. Erro de Regra de Negócio (HTTP 400 Bad Request)
+
+Disparado ao tentar cadastrar registros duplicados (ex: e-mail ou sigla já em uso).
 
 ```json
 {
-  "notaAtual": 0.0,
-  "status": "NECESSÁRIO P2",
-  "precisaP3": false,
-  "precisaExame": false,
-  "notaNecessariaProximaProva": 6.25,
-  "proximaProvaLabel": "P2"
+  "mensagem": "Já existe um curso cadastrado com a sigla: DSM",
+  "status": 400,
+  "timestamp": "2026-09-23T19:30:00"
+}
+```
+
+### 3. Recurso Não Encontrado (HTTP 404 Not Found)
+
+Disparado ao buscar, editar ou deletar IDs que não existem no banco de dados.
+
+```json
+{
+  "mensagem": "Curso com ID 99 não foi encontrado.",
+  "status": 404,
+  "timestamp": "2026-09-23T19:30:00"
+}
+```
+
+### 4. Conflito de Integridade (HTTP 409 Conflict)
+
+Disparado ao tentar deletar um registro pai que possui filhos vinculados (ex: deletar um Curso que possui Semestres cadastrados).
+
+```json
+{
+  "mensagem": "Este registro não pode ser excluído pois possui outros dados vinculados a ele no sistema.",
+  "status": 409,
+  "timestamp": "2026-09-23T19:30:00"
 }
 ```
 
 ---
 
-## 🔗 Integração com o Frontend (Next.js)
+## 🔗 Guia de Implementação de Erros no Frontend (Next.js)
 
-Exemplo de chamada para o cadastro de um novo curso através do painel administrativo:
+Para exibir mensagens claras aos usuários no painel administrativo, o frontend deve interpretar os códigos de status e o corpo das respostas de erro da API.
+
+### Exemplo de Wrapper para Requisições (`lib/api.ts`)
 
 ```typescript
-// lib/api.ts
-export async function cadastrarCurso(dados: { nome: string; sigla: string }) {
-    const res = await fetch('http://localhost:8080/api/admin/cursos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados),
-    });
+export async function requisicaoAPI<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    ...options,
+  });
 
-    const body = await res.json();
+  // Se a deleção retornou 204 No Content
+  if (res.status === 204) {
+    return {} as T;
+  }
 
-    if (!res.ok) {
-        throw new Error(body.mensagem || 'Erro ao cadastrar curso');
+  const dados = await res.json();
+
+  if (!res.ok) {
+    // Se a API retornou a lista detalhada de validação de campos (HTTP 400)
+    if (dados.detalhes && Array.isArray(dados.detalhes)) {
+      throw new Error(dados.detalhes.join('\n'));
     }
+    
+    // Para erros 404, 409 ou regras de negócio simples
+    throw new Error(dados.mensagem || 'Ocorreu um erro ao processar a requisição.');
+  }
 
-    return body;
+  return dados;
+}
+```
+
+### Exemplo de Consumo no Componente React (Exibindo Toasts/Alertas)
+
+```typescript
+import { useState } from 'react';
+
+export function FormularioCurso() {
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function handleSubmit(dadosFormulario: { nome: string; sigla: string }) {
+    setErro(null);
+    try {
+      await requisicaoAPI('http://localhost:8080/api/admin/cursos', {
+        method: 'POST',
+        body: JSON.stringify(dadosFormulario),
+      });
+      alert('Curso cadastrado com sucesso!');
+    } catch (err: any) {
+      // Exibe a mensagem formatada (seja validação de campo, duplicidade ou conflito)
+      setErro(err.message);
+    }
+  }
+
+  return (
+    <form>
+      {erro && (
+        <div style={{ color: 'red', whitespace: 'pre-line' }}>
+          {erro}
+        </div>
+      )}
+      {/* campos do formulário */}
+    </form>
+  );
 }
 ```
