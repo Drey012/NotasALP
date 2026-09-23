@@ -1,3 +1,4 @@
+/*
 package com.faculdade.notas.config;
 
 import io.github.bucket4j.Bandwidth;
@@ -59,4 +60,4 @@ public class RateLimitFilter extends OncePerRequestFilter {
             """.formatted(java.time.LocalDateTime.now()));
         }
     }
-}
+}*/
