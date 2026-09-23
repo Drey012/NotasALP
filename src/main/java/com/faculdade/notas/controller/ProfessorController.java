@@ -29,4 +29,15 @@ public class ProfessorController {
     public ResponseEntity<List<ProfessorResponseDTO>> listar() {
         return ResponseEntity.ok(service.listarTodos());
     }
+
+    @PutMapping("/admin/professores/{id}")
+    public ResponseEntity<ProfessorResponseDTO> atualizar(@PathVariable Long id, @RequestBody ProfessorRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizarProfessor(id, dto));
+    }
+
+    @DeleteMapping("/admin/professores/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluirProfessor(id);
+        return ResponseEntity.noContent().build();
+    }
 }

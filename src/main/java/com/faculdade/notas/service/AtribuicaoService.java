@@ -64,4 +64,36 @@ public class AtribuicaoService {
                 )
         ).collect(Collectors.toList());
     }
+
+    public AtribuicaoResponseDTO atualizarAtribuicao(Long id, AtribuicaoRequestDTO dto) {
+        ProfessorMateria pm = atribuicaoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Atribuição com ID " + id + " não encontrada."));
+
+        Professor professor = professorRepository.findById(dto.professorId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Professor ID " + dto.professorId() + " não encontrado."));
+
+        Materia materia = materiaRepository.findById(dto.materiaId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Matéria ID " + dto.materiaId() + " não encontrada."));
+
+        pm.setProfessor(professor);
+        pm.setMateria(materia);
+        pm.setTurno(dto.turno());
+        pm.setJsonFormula(dto.jsonFormula());
+        ProfessorMateria atualizada = atribuicaoRepository.save(pm);
+
+        return new AtribuicaoResponseDTO(
+                atualizada.getId(),
+                professor.getNome(),
+                materia.getNome(),
+                atualizada.getTurno(),
+                atualizada.getJsonFormula()
+        );
+    }
+
+    public void excluirAtribuicao(Long id) {
+        if (!atribuicaoRepository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Atribuição com ID " + id + " não encontrada.");
+        }
+        atribuicaoRepository.deleteById(id);
+    }
 }

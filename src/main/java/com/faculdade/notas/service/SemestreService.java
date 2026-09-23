@@ -41,4 +41,25 @@ public class SemestreService {
                 new SemestreResponseDTO(s.getId(), s.getOrdem(), s.getCurso().getNome())
         ).collect(Collectors.toList());
     }
+
+    public SemestreResponseDTO atualizarSemestre(Long id, SemestreRequestDTO dto) {
+        Semestre semestre = semestreRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Semestre com ID " + id + " não encontrado."));
+
+        Curso curso = cursoRepository.findById(dto.cursoId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Curso com ID " + dto.cursoId() + " não foi encontrado."));
+
+        semestre.setOrdem(dto.ordem());
+        semestre.setCurso(curso);
+        Semestre atualizado = semestreRepository.save(semestre);
+
+        return new SemestreResponseDTO(atualizado.getId(), atualizado.getOrdem(), curso.getNome());
+    }
+
+    public void excluirSemestre(Long id) {
+        if (!semestreRepository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Semestre com ID " + id + " não encontrado.");
+        }
+        semestreRepository.deleteById(id);
+    }
 }

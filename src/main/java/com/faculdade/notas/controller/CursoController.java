@@ -32,4 +32,15 @@ public class CursoController {
         List<CursoResponseDTO> cursos = service.listarTodos();
         return ResponseEntity.ok(cursos);
     }
+
+    @PutMapping("/admin/cursos/{id}")
+    public ResponseEntity<CursoResponseDTO> atualizar(@PathVariable Long id, @RequestBody CursoRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizarCurso(id, dto));
+    }
+
+    @DeleteMapping("/admin/cursos/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluirCurso(id);
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content (padrão para deleção com sucesso)
+    }
 }

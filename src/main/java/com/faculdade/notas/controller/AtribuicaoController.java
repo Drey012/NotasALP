@@ -29,4 +29,15 @@ public class AtribuicaoController {
     public ResponseEntity<List<AtribuicaoResponseDTO>> listar() {
         return ResponseEntity.ok(service.listarTodas());
     }
+
+    @PutMapping("/admin/atribuicoes/{id}")
+    public ResponseEntity<AtribuicaoResponseDTO> atualizar(@PathVariable Long id, @RequestBody AtribuicaoRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizarAtribuicao(id, dto));
+    }
+
+    @DeleteMapping("/admin/atribuicoes/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluirAtribuicao(id);
+        return ResponseEntity.noContent().build();
+    }
 }

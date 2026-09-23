@@ -1,5 +1,6 @@
 package com.faculdade.notas.service;
 
+import com.faculdade.notas.exception.RecursoNaoEncontradoException;
 import com.faculdade.notas.exception.RegraNegocioException;
 import com.faculdade.notas.model.Curso;
 import com.faculdade.notas.model.dto.request.CursoRequestDTO;
@@ -43,5 +44,27 @@ public class CursoService {
                         curso.getSigla()
                 )
         ).collect(Collectors.toList());
+    }
+
+    public CursoResponseDTO atualizarCurso(Long id, CursoRequestDTO dto) {
+        Curso curso = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Curso com ID " + id + " não encontrado."));
+
+        // Se ele mudou a sigla, verifica se a nova sigla já pertence a outro curso
+        if (!curso.getSigla().equals(dto.sigla()) && repository.existsBySigla(dto.sigla())) {
+            throw new RegraNegocioException("Já existe um curso cadastrado com a sigla: " + dto.sigla());
+        }
+
+        curso.setNome(dto.nome());
+        curso.setSigla(dto.sigla());
+        Curso atualizado = repository.save(curso);
+        return new CursoResponseDTO(atualizado.getId(), atualizado.getNome(), atualizado.getSigla());
+    }
+
+    public void excluirCurso(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Curso com ID " + id + " não encontrado.");
+        }
+        repository.deleteById(id);
     }
 }

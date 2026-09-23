@@ -1,5 +1,6 @@
 package com.faculdade.notas.service;
 
+import com.faculdade.notas.exception.RecursoNaoEncontradoException;
 import com.faculdade.notas.exception.RegraNegocioException;
 import com.faculdade.notas.model.Professor;
 import com.faculdade.notas.model.dto.request.ProfessorRequestDTO;
@@ -36,5 +37,26 @@ public class ProfessorService {
         return repository.findAll().stream().map(p ->
                 new ProfessorResponseDTO(p.getId(), p.getNome(), p.getEmail())
         ).collect(Collectors.toList());
+    }
+
+    public ProfessorResponseDTO atualizarProfessor(Long id, ProfessorRequestDTO dto) {
+        Professor professor = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Professor com ID " + id + " não encontrado."));
+
+        if (!professor.getEmail().equals(dto.email()) && repository.existsByEmail(dto.email())) {
+            throw new RegraNegocioException("O e-mail informado já está em uso por outro professor.");
+        }
+
+        professor.setNome(dto.nome());
+        professor.setEmail(dto.email());
+        Professor atualizado = repository.save(professor);
+        return new ProfessorResponseDTO(atualizado.getId(), atualizado.getNome(), atualizado.getEmail());
+    }
+
+    public void excluirProfessor(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Professor com ID " + id + " não encontrado.");
+        }
+        repository.deleteById(id);
     }
 }

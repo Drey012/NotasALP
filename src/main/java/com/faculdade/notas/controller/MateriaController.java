@@ -29,4 +29,15 @@ public class MateriaController {
     public ResponseEntity<List<MateriaResponseDTO>> listar() {
         return ResponseEntity.ok(service.listarTodas());
     }
+
+    @PutMapping("/admin/materias/{id}")
+    public ResponseEntity<MateriaResponseDTO> atualizar(@PathVariable Long id, @RequestBody MateriaRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizarMateria(id, dto));
+    }
+
+    @DeleteMapping("/admin/materias/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluirMateria(id);
+        return ResponseEntity.noContent().build();
+    }
 }

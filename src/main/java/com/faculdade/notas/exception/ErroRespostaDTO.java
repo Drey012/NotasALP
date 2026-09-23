@@ -7,7 +7,7 @@ public class ErroRespostaDTO {
     private final int status;
     private final LocalDateTime timestamp;
 
-    public ErroRespostaDTO(String mensagem, int status) {
+    public ErroRespostaDTO(String mensagem, int status, LocalDateTime now) {
         this.mensagem = mensagem;
         this.status = status;
         this.timestamp = LocalDateTime.now();

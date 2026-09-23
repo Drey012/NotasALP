@@ -29,4 +29,15 @@ public class SemestreController {
     public ResponseEntity<List<SemestreResponseDTO>> listar() {
         return ResponseEntity.ok(service.listarTodos());
     }
+
+    @PutMapping("/admin/semestres/{id}")
+    public ResponseEntity<SemestreResponseDTO> atualizar(@PathVariable Long id, @RequestBody SemestreRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizarSemestre(id, dto));
+    }
+
+    @DeleteMapping("/admin/semestres/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        service.excluirSemestre(id);
+        return ResponseEntity.noContent().build();
+    }
 }
