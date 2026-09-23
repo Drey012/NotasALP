@@ -3,6 +3,7 @@ package com.faculdade.notas.controller;
 import com.faculdade.notas.model.dto.request.CursoRequestDTO;
 import com.faculdade.notas.model.dto.response.CursoResponseDTO;
 import com.faculdade.notas.service.CursoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class CursoController {
 
     // Rota de Inserção (Administrativa)
     @PostMapping("/admin/cursos")
-    public ResponseEntity<CursoResponseDTO> criar(@RequestBody CursoRequestDTO dto) {
+    public ResponseEntity<CursoResponseDTO> criar(@Valid @RequestBody CursoRequestDTO dto) {
         CursoResponseDTO cursoSalvo = service.cadastrarCurso(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(cursoSalvo);
     }
@@ -34,7 +35,7 @@ public class CursoController {
     }
 
     @PutMapping("/admin/cursos/{id}")
-    public ResponseEntity<CursoResponseDTO> atualizar(@PathVariable Long id, @RequestBody CursoRequestDTO dto) {
+    public ResponseEntity<CursoResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody CursoRequestDTO dto) {
         return ResponseEntity.ok(service.atualizarCurso(id, dto));
     }
 

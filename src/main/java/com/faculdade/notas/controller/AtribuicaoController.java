@@ -3,6 +3,7 @@ package com.faculdade.notas.controller;
 import com.faculdade.notas.model.dto.request.AtribuicaoRequestDTO;
 import com.faculdade.notas.model.dto.response.AtribuicaoResponseDTO;
 import com.faculdade.notas.service.AtribuicaoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class AtribuicaoController {
     }
 
     @PostMapping("/admin/atribuicoes")
-    public ResponseEntity<AtribuicaoResponseDTO> criar(@RequestBody AtribuicaoRequestDTO dto) {
+    public ResponseEntity<AtribuicaoResponseDTO> criar(@Valid @RequestBody AtribuicaoRequestDTO dto) {
         AtribuicaoResponseDTO criada = service.cadastrarAtribuicao(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(criada);
     }
@@ -31,7 +32,7 @@ public class AtribuicaoController {
     }
 
     @PutMapping("/admin/atribuicoes/{id}")
-    public ResponseEntity<AtribuicaoResponseDTO> atualizar(@PathVariable Long id, @RequestBody AtribuicaoRequestDTO dto) {
+    public ResponseEntity<AtribuicaoResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody AtribuicaoRequestDTO dto) {
         return ResponseEntity.ok(service.atualizarAtribuicao(id, dto));
     }
 

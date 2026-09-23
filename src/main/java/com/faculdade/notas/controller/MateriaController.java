@@ -3,6 +3,7 @@ package com.faculdade.notas.controller;
 import com.faculdade.notas.model.dto.request.MateriaRequestDTO;
 import com.faculdade.notas.model.dto.response.MateriaResponseDTO;
 import com.faculdade.notas.service.MateriaService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class MateriaController {
     }
 
     @PostMapping("/admin/materias")
-    public ResponseEntity<MateriaResponseDTO> criar(@RequestBody MateriaRequestDTO dto) {
+    public ResponseEntity<MateriaResponseDTO> criar(@Valid @RequestBody MateriaRequestDTO dto) {
         MateriaResponseDTO materiaSalva = service.cadastrarMateria(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(materiaSalva);
     }
@@ -31,7 +32,7 @@ public class MateriaController {
     }
 
     @PutMapping("/admin/materias/{id}")
-    public ResponseEntity<MateriaResponseDTO> atualizar(@PathVariable Long id, @RequestBody MateriaRequestDTO dto) {
+    public ResponseEntity<MateriaResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody MateriaRequestDTO dto) {
         return ResponseEntity.ok(service.atualizarMateria(id, dto));
     }
 

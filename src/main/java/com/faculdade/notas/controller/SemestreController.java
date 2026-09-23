@@ -3,6 +3,7 @@ package com.faculdade.notas.controller;
 import com.faculdade.notas.model.dto.request.SemestreRequestDTO;
 import com.faculdade.notas.model.dto.response.SemestreResponseDTO;
 import com.faculdade.notas.service.SemestreService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class SemestreController {
     }
 
     @PostMapping("/admin/semestres")
-    public ResponseEntity<SemestreResponseDTO> criar(@RequestBody SemestreRequestDTO dto) {
+    public ResponseEntity<SemestreResponseDTO> criar(@Valid @RequestBody SemestreRequestDTO dto) {
         SemestreResponseDTO semestreSalvo = service.cadastrarSemestre(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(semestreSalvo);
     }
@@ -31,7 +32,7 @@ public class SemestreController {
     }
 
     @PutMapping("/admin/semestres/{id}")
-    public ResponseEntity<SemestreResponseDTO> atualizar(@PathVariable Long id, @RequestBody SemestreRequestDTO dto) {
+    public ResponseEntity<SemestreResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody SemestreRequestDTO dto) {
         return ResponseEntity.ok(service.atualizarSemestre(id, dto));
     }
 

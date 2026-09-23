@@ -3,6 +3,7 @@ package com.faculdade.notas.controller;
 import com.faculdade.notas.model.dto.request.ProfessorRequestDTO;
 import com.faculdade.notas.model.dto.response.ProfessorResponseDTO;
 import com.faculdade.notas.service.ProfessorService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class ProfessorController {
     }
 
     @PostMapping("/admin/professores")
-    public ResponseEntity<ProfessorResponseDTO> criar(@RequestBody ProfessorRequestDTO dto) {
+    public ResponseEntity<ProfessorResponseDTO> criar(@Valid @RequestBody ProfessorRequestDTO dto) {
         ProfessorResponseDTO professorSalvo = service.cadastrarProfessor(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(professorSalvo);
     }
@@ -31,7 +32,7 @@ public class ProfessorController {
     }
 
     @PutMapping("/admin/professores/{id}")
-    public ResponseEntity<ProfessorResponseDTO> atualizar(@PathVariable Long id, @RequestBody ProfessorRequestDTO dto) {
+    public ResponseEntity<ProfessorResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody ProfessorRequestDTO dto) {
         return ResponseEntity.ok(service.atualizarProfessor(id, dto));
     }
 
