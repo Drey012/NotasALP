@@ -1,13 +1,14 @@
 # NotasALP - Avaliador Acadêmico (Spring Boot REST API)
 
-Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução, além de suportar o CRUD dinâmico completo de toda a estrutura acadêmica via painel administrativo.
+Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para cálculo e acompanhamento do status acadêmico de alunos. A arquitetura utiliza um **Motor de Regras Dinâmico (Rule Engine)** integrado a um banco de dados **PostgreSQL**, permitindo interpretar e calcular matrizes matemáticas complexas (como o padrão SIGA) em tempo de execução, além de suportar o CRUD dinâmico completo de toda a estrutura acadêmica e controle de acesso via Spring Security + JWT.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Java 17**
-- **Spring Boot 3 (Web, Data JPA, Validation)**
+- **Spring Boot 3 (Web, Data JPA, Validation, Security)**
+- **Spring Security & JJWT (io.jsonwebtoken)** (Autenticação Stateless via JWT)
 - **PostgreSQL** (Armazenamento relacional e documentos JSON)
 - **exp4j** (Avaliador de Expressões Matemáticas)
 - **Maven**
@@ -20,7 +21,12 @@ Este projeto consiste em uma API REST desenvolvida em Java com Spring Boot para 
 
 1. Certifique-se de ter o PostgreSQL instalado.
 2. Crie um banco de dados vazio chamado `notasalp`.
-3. Renomeie o arquivo `src/main/resources/application.properties.example` para `application.properties` e preencha sua senha do banco.
+3. Renomeie o arquivo `src/main/resources/application.properties.example` para `application.properties`, preencha sua senha do banco e defina sua chave secreta de JWT:
+
+```properties
+jwt.secret=SuaChaveSecretaSuperSeguraEExtremamenteLongaComMaisDe32Caracteres123456
+jwt.expiration=86400000
+```
 
 > **Migração de Dados:**
 > - **Para Exportar:** No pgAdmin, clique com o botão direito no banco > *Backup...* > Format: *Plain* > Defina o nome (ex: `backup.sql`).
@@ -40,24 +46,35 @@ A aplicação estará acessível em: `http://localhost:8080`.
 
 ## 📋 Arquitetura de Dados, DTOs e Validações
 
-Para garantir segurança e organização, a API separa rigorosamente os dados de entrada, saída e regras de validação:
+Para garantir segurança e organização, a API separa rigorosamente os dados de entrada, saída, regras de validação e segurança:
 
 - **`request` (Entrada):** Objetos de requisição (`DTO`) enviados pelo cliente nos métodos `POST` e `PUT`. São validados com anotações de `jakarta.validation` (`@NotBlank`, `@NotNull`, `@Email`, `@Size`, `@Min`).
-- **`response` (Saída):** Objetos de resposta retornados pela API após o processamento, contendo o ID gerado e metadados relacionais para consumo visual no frontend.
-- **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos/isolados destinados ao gerenciamento e cadastro da estrutura acadêmica.
+- **`response` (Saída):** Objetos de resposta retornados pela API após o processamento, contendo IDs gerados, tokens de autenticação ou metadados relacionais para consumo no frontend.
+- **Rotas Públicas:** Endpoints de login/registro (`/api/auth/**`), consulta pública de matrizes e execução do motor de regras.
+- **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos por Spring Security. Exigem o envio do token JWT no cabeçalho `Authorization: Bearer <token>`.
 
 ---
 
 ## 📌 Endpoints da API
 
-### A. Rotas Administrativas (CRUD Dinâmico)
+### A. Autenticação e Usuários (Público)
 
-*Ordem recomendada de cadastro para respeitar as chaves estrangeiras: Cursos ➔ Professores ➔ Semestres ➔ Matérias ➔ Atribuições.*
+| Método | Endpoint | Descrição | Corpo da Requisição |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/registrar` | Cadastrar novo administrador | `{"nome": "Nome", "email": "a@cps.sp.gov.br", "senha": "123"}` |
+| `POST` | `/api/auth/login` | Autenticar e obter Token JWT | `{"email": "a@cps.sp.gov.br", "senha": "123"}` |
+
+---
+
+### B. Rotas Administrativas (CRUD Dinâmico - Protegido por JWT)
+
+*Exige o cabeçalho `Authorization: Bearer <token>` em todas as requisições.*
+*Ordem recomendada de cadastro: Cursos ➔ Professores ➔ Semestres ➔ Matérias ➔ Atribuições.*
 
 | Módulo | Método | Endpoint | Descrição | Corpo / Parâmetros |
 | --- | --- | --- | --- | --- |
 | **Cursos** | `POST` | `/api/admin/cursos` | Criar novo curso | `{"nome": "DSM", "sigla": "DSM"}` |
-| | `PUT` | `/api/admin/cursos/{id}` | Atualizar curso existente | `{"nome": "Novo Nome", "sigla": "SIG"}` |
+| | `PUT` | `/api/admin/cursos/{id}` | Atualizar curso | `{"nome": "Novo Nome", "sigla": "SIG"}` |
 | | `DELETE` | `/api/admin/cursos/{id}` | Excluir curso pelo ID | N/A *(Retorna 204 No Content)* |
 | **Professores** | `POST` | `/api/admin/professores` | Criar novo professor | `{"nome": "Prof", "email": "a@cps.sp.gov.br"}` |
 | | `PUT` | `/api/admin/professores/{id}` | Atualizar professor | `{"nome": "Prof X", "email": "x@cps.sp.gov.br"}` |
@@ -74,7 +91,7 @@ Para garantir segurança e organização, a API separa rigorosamente os dados de
 
 ---
 
-### B. Rotas Públicas / Consulta
+### C. Rotas Públicas / Consulta
 
 #### 1. Listar Professores/Atribuições
 
@@ -91,11 +108,22 @@ Para garantir segurança e organização, a API separa rigorosamente os dados de
 
 ## ⚠️ Estrutura de Tratamento de Erros (Backend)
 
-A API trata e padroniza todas as exceções via `@RestControllerAdvice` no `GlobalExceptionHandler`. Qualquer erro disparado retornará um JSON estruturado:
+A API trata e padroniza todas as exceções via `@RestControllerAdvice` e `AuthenticationEntryPoint`. Qualquer erro disparado retornará um JSON estruturado:
 
-### 1. Erro de Validação de Formato (HTTP 400 Bad Request)
+### 1. Erro de Autenticação / Token Ausente (HTTP 401 Unauthorized)
 
-Ocorre quando campos marcados com `@Valid` falham na validação (ex: e-mail inválido ou campos em branco). Contém a lista de `detalhes` indicando os campos específicos:
+Disparado ao tentar acessar rotas `/api/admin/**` sem enviar um token JWT válido.
+
+```json
+{
+  "mensagem": "Acesso não autorizado. Token ausente ou inválido.",
+  "status": 401
+}
+```
+
+### 2. Erro de Validação de Formato (HTTP 400 Bad Request)
+
+Ocorre quando campos marcados com `@Valid` falham na validação (ex: e-mail inválido ou campos em branco).
 
 ```json
 {
@@ -109,19 +137,19 @@ Ocorre quando campos marcados com `@Valid` falham na validação (ex: e-mail inv
 }
 ```
 
-### 2. Erro de Regra de Negócio (HTTP 400 Bad Request)
+### 3. Erro de Regra de Negócio (HTTP 400 Bad Request)
 
 Disparado ao tentar cadastrar registros duplicados (ex: e-mail ou sigla já em uso).
 
 ```json
 {
-  "mensagem": "Já existe um curso cadastrado com a sigla: DSM",
+  "mensagem": "O e-mail informado já está em uso.",
   "status": 400,
   "timestamp": "2026-09-23T19:30:00"
 }
 ```
 
-### 3. Recurso Não Encontrado (HTTP 404 Not Found)
+### 4. Recurso Não Encontrado (HTTP 404 Not Found)
 
 Disparado ao buscar, editar ou deletar IDs que não existem no banco de dados.
 
@@ -133,9 +161,9 @@ Disparado ao buscar, editar ou deletar IDs que não existem no banco de dados.
 }
 ```
 
-### 4. Conflito de Integridade (HTTP 409 Conflict)
+### 5. Conflito de Integridade (HTTP 409 Conflict)
 
-Disparado ao tentar deletar um registro pai que possui filhos vinculados (ex: deletar um Curso que possui Semestres cadastrados).
+Disparado ao tentar deletar um registro pai que possui filhos vinculados.
 
 ```json
 {
@@ -147,71 +175,52 @@ Disparado ao tentar deletar um registro pai que possui filhos vinculados (ex: de
 
 ---
 
-## 🔗 Guia de Implementação de Erros no Frontend (Next.js)
+## 🔗 Guia de Implementação com Autenticação no Frontend (Next.js)
 
-Para exibir mensagens claras aos usuários no painel administrativo, o frontend deve interpretar os códigos de status e o corpo das respostas de erro da API.
+O frontend deve armazenar o token JWT recebido no `POST /api/auth/login` (ex: em `localStorage` ou `Cookies`) e injetá-lo automaticamente no cabeçalho das requisições administrativas.
 
-### Exemplo de Wrapper para Requisições (`lib/api.ts`)
+### Exemplo de Client HTTP Genérico (`lib/api.ts`)
 
 ```typescript
 export async function requisicaoAPI<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  });
+    // Recupera o token do armazenamento local
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  // Se a deleção retornou 204 No Content
-  if (res.status === 204) {
-    return {} as T;
-  }
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string>),
+    };
 
-  const dados = await res.json();
-
-  if (!res.ok) {
-    // Se a API retornou a lista detalhada de validação de campos (HTTP 400)
-    if (dados.detalhes && Array.isArray(dados.detalhes)) {
-      throw new Error(dados.detalhes.join('\n'));
+    // Injecao automatica do token JWT se presente
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
-    
-    // Para erros 404, 409 ou regras de negócio simples
-    throw new Error(dados.mensagem || 'Ocorreu um erro ao processar a requisição.');
-  }
 
-  return dados;
-}
-```
+    const res = await fetch(url, { ...options, headers });
 
-### Exemplo de Consumo no Componente React (Exibindo Toasts/Alertas)
-
-```typescript
-import { useState } from 'react';
-
-export function FormularioCurso() {
-  const [erro, setErro] = useState<string | null>(null);
-
-  async function handleSubmit(dadosFormulario: { nome: string; sigla: string }) {
-    setErro(null);
-    try {
-      await requisicaoAPI('http://localhost:8080/api/admin/cursos', {
-        method: 'POST',
-        body: JSON.stringify(dadosFormulario),
-      });
-      alert('Curso cadastrado com sucesso!');
-    } catch (err: any) {
-      // Exibe a mensagem formatada (seja validação de campo, duplicidade ou conflito)
-      setErro(err.message);
+    if (res.status === 204) {
+        return {} as T;
     }
-  }
 
-  return (
-    <form>
-      {erro && (
-        <div style={{ color: 'red', whitespace: 'pre-line' }}>
-          {erro}
-        </div>
-      )}
-      {/* campos do formulário */}
-    </form>
-  );
+    const dados = await res.json();
+
+    if (!res.ok) {
+        // Se o token expirar ou for invalido, redireciona para a tela de login
+        if (res.status === 401) {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+            throw new Error('Sessão expirada. Faça login novamente.');
+        }
+
+        if (dados.detalhes && Array.isArray(dados.detalhes)) {
+            throw new Error(dados.detalhes.join('\n'));
+        }
+
+        throw new Error(dados.mensagem || 'Ocorreu um erro ao processar a requisição.');
+    }
+
+    return dados;
 }
 ```
