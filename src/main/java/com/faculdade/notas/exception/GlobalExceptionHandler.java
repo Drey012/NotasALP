@@ -29,6 +29,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
     }
 
+    // 400 - BAD REQUEST (JSON malformado ou erro de encoding/sintaxe)
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErroRespostaDTO> handleJsonError(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        ErroRespostaDTO erro = new ErroRespostaDTO(
+                "O corpo da requisição (JSON) está malformado ou contém caracteres inválidos.",
+                HttpStatus.BAD_REQUEST.value(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
+    }
+
     // 409 - CONFLICT (Integridade do Banco - Efeito Cascata)
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErroRespostaDTO> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
