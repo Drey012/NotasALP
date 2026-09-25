@@ -21,11 +21,14 @@ public class AutenticacaoController {
     private static final String COOKIE_NAME = "NOTASALP_SESSION";
     private final AutenticacaoService autenticacaoService;
     private final boolean cookieSecure;
+    private final String cookieSameSite;
 
     public AutenticacaoController(AutenticacaoService autenticacaoService,
-                                  @Value("${app.auth.cookie-secure:false}") boolean cookieSecure) {
+                                  @Value("${app.auth.cookie-secure:false}") boolean cookieSecure,
+                                  @Value("${app.auth.cookie-same-site:Lax}") String cookieSameSite) {
         this.autenticacaoService = autenticacaoService;
         this.cookieSecure = cookieSecure;
+        this.cookieSameSite = cookieSameSite;
     }
 
     @PostMapping("/registrar")
@@ -56,7 +59,7 @@ public class AutenticacaoController {
         return ResponseCookie.from(COOKIE_NAME, value == null ? "" : value)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .path("/")
                 .maxAge(maxAge)
                 .build();

@@ -26,3 +26,5 @@ spring.flyway.enabled=${FLYWAY_ENABLED:true}
 app.admin.name=${ADMIN_NAME:Administrador}
 app.admin.email=${ADMIN_EMAIL:}
 app.admin.password=${ADMIN_PASSWORD:}
+
+app.auth.cookie-same-site=${AUTH_COOKIE_SAME_SITE:Lax}
