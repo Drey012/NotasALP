@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -46,6 +47,11 @@ public class AutenticacaoController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookie(null, Duration.ZERO).toString())
                 .build();
+    }
+
+    @GetMapping("/csrf")
+    public CsrfToken csrf(CsrfToken token) {
+        return token;
     }
 
     private ResponseEntity<LoginResponseDTO> responder(HttpStatus status, AutenticacaoResultado resultado) {
