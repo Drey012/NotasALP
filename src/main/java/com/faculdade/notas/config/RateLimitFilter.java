@@ -1,4 +1,3 @@
-/*
 package com.faculdade.notas.config;
 
 import io.github.bucket4j.Bandwidth;
@@ -14,50 +13,41 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
-
-    // Armazena um "balde" de tokens para cada IP de cliente
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
-
-    // Regra: Máximo de 20 requisições por minuto por IP
-    private Bucket criarNovoBalde() {
-        Bandwidth limite = Bandwidth.classic(20, Refill.greedy(20, Duration.ofMinutes(1)));
-        return Bucket.builder().addLimit(limite).build();
-    }
-
-    private Bucket obterBaldePorIp(String ip) {
-        return buckets.computeIfAbsent(ip, k -> criarNovoBalde());
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
-        // Extrai o IP do cliente (considerando proxies ou Nginx/Azure VM)
-        String ipCliente = request.getHeader("X-Forwarded-For");
-        if (ipCliente == null || ipCliente.isEmpty()) {
-            ipCliente = request.getRemoteAddr();
-        }
-
-        Bucket balde = obterBaldePorIp(ipCliente);
-
-        // Consome 1 token por requisição
-        if (balde.tryConsume(1)) {
-            filterChain.doFilter(request, response);
-        } else {
+        String path = request.getRequestURI();
+        String key = request.getRemoteAddr() + ":" + routeGroup(path);
+        Bucket bucket = buckets.computeIfAbsent(key, ignored -> createBucket(path));
+        if (!bucket.tryConsume(1)) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("""
-                {
-                    "status": 429,
-                    "mensagem": "Limite de requisições excedido. Tente novamente em 1 minuto.",
-                    "timestamp": "%s"
-                }
-            """.formatted(java.time.LocalDateTime.now()));
+            response.setHeader("Retry-After", "60");
+            response.getWriter().write("{\"status\":429,\"mensagem\":\"Limite de requisições excedido. Tente novamente em 1 minuto.\",\"timestamp\":\"" + LocalDateTime.now() + "\"}");
+            return;
         }
+        filterChain.doFilter(request, response);
     }
-}*/
+
+    private Bucket createBucket(String path) {
+        int capacity = path.startsWith("/api/auth/") ? 8 : 60;
+        return Bucket.builder()
+                .addLimit(Bandwidth.classic(capacity, Refill.greedy(capacity, Duration.ofMinutes(1))))
+                .build();
+    }
+
+    private String routeGroup(String path) {
+        if (path.startsWith("/api/auth/")) return "auth";
+        if (path.startsWith("/api/admin/")) return "admin";
+        if (path.equals("/api/avaliar")) return "avaliar";
+        return "public";
+    }
+}

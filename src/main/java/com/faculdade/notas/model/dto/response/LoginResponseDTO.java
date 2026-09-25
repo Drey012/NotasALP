@@ -4,9 +4,10 @@ public record LoginResponseDTO(
         String token,
         String tipo,
         String email,
-        String nome
+        String nome,
+        String cargo
 ) {
-    public LoginResponseDTO(String token, String email, String nome) {
-        this(token, "Bearer", email, nome);
+    public LoginResponseDTO(String email, String nome, String cargo) {
+        this(null, "Bearer", email, nome, cargo);
     }
 }

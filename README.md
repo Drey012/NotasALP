@@ -224,3 +224,16 @@ export async function requisicaoAPI<T>(url: string, options?: RequestInit): Prom
     return dados;
 }
 ```
+## Hardening acadêmico e execução local
+
+A autenticação usa um cookie `NOTASALP_SESSION` com JWT `HttpOnly`, expiração de oito horas e proteção CSRF para mutações administrativas. O frontend não recebe o token no JSON. Em HTTPS, habilite `AUTH_COOKIE_SECURE=true`.
+
+O registro público fica desativado por padrão. Para criar o primeiro administrador sem expor um endpoint privilegiado, defina `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` antes de iniciar a API. O bootstrap só cria o usuário se o e-mail ainda não existir. Se o cadastro público for habilitado para uma demonstração local com `AUTH_PUBLIC_REGISTRATION=true`, novos usuários recebem apenas o papel `CONSULTOR`.
+
+A autorização diferencia `ADMIN` e `CONSULTOR`: as operações em `/api/admin/**` exigem `ADMIN`, enquanto a consulta de professores cadastrados pode ser feita por ambos. O rate limiting está ativo na própria aplicação para uma execução em instância única: autenticação possui limite mais restritivo, e as demais rotas são agrupadas por IP e finalidade. Em um cenário com múltiplas instâncias, esse filtro deve ser movido para uma camada distribuída.
+
+O exemplo de configuração usa variáveis de ambiente para banco, JWT, CORS, cookies e Actuator. `ddl-auto=update` permanece como default de laboratório para facilitar a execução diária; ambientes compartilhados devem usar `JPA_DDL_AUTO=validate` e as migrations Flyway em `src/main/resources/db/migration`.
+
+Para duas máquinas, configure `FRONTEND_ORIGIN` com a origem real do frontend e `NEXT_PUBLIC_API_URL` com o endereço alcançável da API. Cookies `SameSite=Lax` funcionam quando frontend e API estão no mesmo site; se forem sites distintos, use HTTPS e `AUTH_COOKIE_SECURE=true` com a política de cookie apropriada.
+
+O endpoint `/actuator/health` oferece uma verificação simples de disponibilidade, e métricas básicas podem ser consultadas pelos endpoints do Actuator expostos no perfil de laboratório.

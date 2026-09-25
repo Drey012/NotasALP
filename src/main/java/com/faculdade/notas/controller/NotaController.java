@@ -4,6 +4,7 @@ import com.faculdade.notas.model.ResultadoAvaliacao;
 import com.faculdade.notas.model.dto.ProfessorDTO;
 import com.faculdade.notas.model.dto.RequisicaoNotaDTO;
 import com.faculdade.notas.service.NotaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ public class NotaController {
     }
 
     @PostMapping("/avaliar")
-    public ResponseEntity<ResultadoAvaliacao> avaliar(@RequestBody RequisicaoNotaDTO requisicao) {
+    public ResponseEntity<ResultadoAvaliacao> avaliar(@Valid @RequestBody RequisicaoNotaDTO requisicao) {
         ResultadoAvaliacao resultado = notaService.avaliar(requisicao);
         return ResponseEntity.ok(resultado);
     }
