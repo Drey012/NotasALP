@@ -53,6 +53,12 @@ Para garantir segurança e organização, a API separa rigorosamente os dados de
 - **Rotas Públicas:** Endpoints de login/registro (`/api/auth/**`), consulta pública de matrizes e execução do motor de regras.
 - **Rotas Administrativas (`/api/admin/...`):** Endpoints protegidos por Spring Security. Exigem o envio do token JWT no cabeçalho `Authorization: Bearer <token>`.
 
+### Limites e validação das fórmulas
+
+As fórmulas usam expressões matemáticas do exp4j, com variáveis de notas e a função `MAX` usada pelas regras acadêmicas atuais. O sistema não interpreta condicionais ou comparações lógicas (por exemplo, `SE P1 > 6, ignorar P2; caso contrário, exigir P3`); os critérios de aprovação, P3 e exame são definidos pelo fluxo fixo do avaliador.
+
+Ao cadastrar ou atualizar uma atribuição, o backend valida a estrutura JSON e a sintaxe da expressão. Uma operação aritmética inválida em tempo de cálculo, como divisão por zero, retorna HTTP 400 com uma mensagem de validação em vez de um erro interno 500.
+
 ---
 
 ## 📌 Endpoints da API

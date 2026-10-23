@@ -1,5 +1,6 @@
 package com.faculdade.notas.service;
 
+import com.faculdade.notas.exception.RegraNegocioException;
 import com.faculdade.notas.model.ResultadoAvaliacao;
 import com.faculdade.notas.model.dto.RequisicaoNotaDTO;
 import com.faculdade.notas.util.CalculoUtils;
@@ -19,10 +20,28 @@ public class AvaliadorAcademico {
         }
     };
 
+    public void validarFormula(String formula, String[] rotulos) {
+        Expression expression = criarExpressao(formula, rotulos);
+        for (String rotulo : rotulos) {
+            expression.setVariable(rotulo, 1.0);
+        }
+        if (formula.contains("P3")) {
+            expression.setVariable("P3", 1.0);
+        }
+        try {
+            expression.evaluate();
+        } catch (ArithmeticException | IllegalArgumentException ex) {
+            throw new RegraNegocioException("A sintaxe da fórmula é inválida. Revise a expressão e suas variáveis.");
+        }
+    }
+
     public ResultadoAvaliacao avaliar(String formula, String[] rotulos, RequisicaoNotaDTO requisicao) {
         double[] notas = requisicao.getNotasIniciais();
         Double p3 = requisicao.getP3();
         Double exame = requisicao.getExame();
+        validarNotas(notas);
+        validarNota(p3);
+        validarNota(exame);
 
         // Regras 1 e 2: Se foram fornecidas menos notas do que as necessárias
         if (notas.length < rotulos.length) {
@@ -65,16 +84,7 @@ public class AvaliadorAcademico {
     }
 
     private double calcularExpressao(String formula, String[] rotulos, double[] notasIniciais, double p3Valor) {
-        ExpressionBuilder builder = new ExpressionBuilder(formula).function(maxFunction);
-
-        for (String rotulo : rotulos) {
-            builder.variable(rotulo);
-        }
-        if (formula.contains("P3")) {
-            builder.variable("P3");
-        }
-
-        Expression expression = builder.build();
+        Expression expression = criarExpressao(formula, rotulos);
 
         for (int i = 0; i < rotulos.length; i++) {
             expression.setVariable(rotulos[i], notasIniciais[i]);
@@ -83,7 +93,58 @@ public class AvaliadorAcademico {
             expression.setVariable("P3", p3Valor);
         }
 
-        return CalculoUtils.arredondar(expression.evaluate());
+        double resultado;
+        try {
+            resultado = expression.evaluate();
+        } catch (ArithmeticException ex) {
+            throw new RegraNegocioException(
+                    "A fórmula produziu um resultado inválido. Verifique operações como divisão por zero."
+            );
+        }
+        if (!Double.isFinite(resultado)) {
+            throw new RegraNegocioException(
+                    "A fórmula produziu um resultado inválido. Verifique operações como divisão por zero."
+            );
+        }
+        return CalculoUtils.arredondar(resultado);
+    }
+
+    private Expression criarExpressao(String formula, String[] rotulos) {
+        if (formula == null || formula.isBlank() || rotulos == null) {
+            throw new RegraNegocioException("A fórmula ou seus rótulos estão ausentes ou inválidos.");
+        }
+
+        ExpressionBuilder builder = new ExpressionBuilder(formula).function(maxFunction);
+        for (String rotulo : rotulos) {
+            if (rotulo == null || rotulo.isBlank()) {
+                throw new RegraNegocioException("Os rótulos das notas da fórmula são inválidos.");
+            }
+            builder.variable(rotulo);
+        }
+        if (formula.contains("P3")) {
+            builder.variable("P3");
+        }
+
+        try {
+            return builder.build();
+        } catch (IllegalArgumentException ex) {
+            throw new RegraNegocioException("A sintaxe da fórmula é inválida. Revise a expressão e suas variáveis.");
+        }
+    }
+
+    private void validarNotas(double[] notas) {
+        if (notas == null) {
+            throw new RegraNegocioException("As notas iniciais são obrigatórias.");
+        }
+        for (double nota : notas) {
+            validarNota(nota);
+        }
+    }
+
+    private void validarNota(Double nota) {
+        if (nota != null && (!Double.isFinite(nota) || nota < 0.0 || nota > 10.0)) {
+            throw new RegraNegocioException("Cada nota informada deve estar entre 0 e 10.");
+        }
     }
 
     // Algoritmo de Força Bruta: Testa notas de 0.0 a 10.0 até o motor responder >= 6.0

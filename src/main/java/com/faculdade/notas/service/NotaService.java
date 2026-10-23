@@ -1,12 +1,13 @@
 package com.faculdade.notas.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.faculdade.notas.exception.RegraNegocioException;
 import com.faculdade.notas.model.ProfessorMateria;
 import com.faculdade.notas.model.ResultadoAvaliacao;
 import com.faculdade.notas.model.dto.ProfessorDTO;
 import com.faculdade.notas.model.dto.RequisicaoNotaDTO;
 import com.faculdade.notas.repository.ProfessorMateriaRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -70,6 +71,8 @@ public class NotaService {
 
             // Envia os dados diretamente para o motor dinâmico
             return avaliador.avaliar(formula, rotulos, requisicao);
+        } catch (RegraNegocioException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Erro ao processar a avaliação", e);
         }
